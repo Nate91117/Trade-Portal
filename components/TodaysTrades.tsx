@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Pencil, Trash2, Check, X, RefreshCw, AlertCircle } from 'lucide-react';
 import type { Trade } from '@/lib/types';
-import { STRATEGIES, TRADERS, PRODUCTS, CONTRACT_MONTHS } from '@/lib/constants';
+import { STRATEGIES, TRADERS, PRODUCTS, CONTRACT_MONTHS, STRATEGY_CONFIG } from '@/lib/constants';
 
 /* ── StatusBadge ──────────────────────────────────────── */
 function StatusBadge({ status }: { status: string }) {
@@ -48,7 +48,15 @@ function EditRow({
         <input type="text" value={editForm.account ?? ''} onChange={upd('account')} className={inp} />
       </td>
       <td className="px-2 py-2">
-        <select value={editForm.strategy ?? ''} onChange={upd('strategy')} className={sel}>
+        <select
+          value={editForm.strategy ?? ''}
+          onChange={e => {
+            const strategy = e.target.value;
+            const { entity, account } = STRATEGY_CONFIG[strategy];
+            setEditForm(f => ({ ...f, strategy, entity, account }));
+          }}
+          className={sel}
+        >
           {STRATEGIES.map(s => <option key={s}>{s}</option>)}
         </select>
       </td>
