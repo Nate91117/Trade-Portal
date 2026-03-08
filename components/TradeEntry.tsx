@@ -46,11 +46,6 @@ export default function TradeEntry() {
   const [summary, setSummary] = useState<SummaryRow[]>([]);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
-  const qtyNum = parseFloat(form.qty);
-  const qtyFilled = form.qty !== '' && !isNaN(qtyNum);
-  const isQtyFlagged =
-    (form.direction === 'Sell' && qtyFilled && qtyNum > 0) ||
-    (form.direction === 'Buy'  && qtyFilled && qtyNum < 0);
 
   const fetchSummary = useCallback(async () => {
     setSummaryLoading(true);
@@ -88,7 +83,10 @@ export default function TradeEntry() {
       const res = await fetch('/api/trades', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, qty: parseFloat(form.qty) }),
+        body: JSON.stringify({
+          ...form,
+          qty: form.direction === 'Sell' ? -Math.abs(parseFloat(form.qty)) : Math.abs(parseFloat(form.qty)),
+        }),
       });
 
       if (!res.ok) {
@@ -200,29 +198,16 @@ export default function TradeEntry() {
             {/* ── QTY with validation ── */}
             <div>
               <label className={labelCls}>QTY</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  step="any"
-                  value={form.qty}
-                  onChange={set('qty')}
-                  placeholder="0"
-                  required
-                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors ${
-                    isQtyFlagged
-                      ? 'bg-red-50 border-red-400 text-red-700 focus:ring-red-200'
-                      : 'bg-white border-gray-200 focus:ring-[#E11932]/40 focus:border-[#E11932]'
-                  }`}
-                />
-                {isQtyFlagged && (
-                  <AlertCircle size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 pointer-events-none" />
-                )}
-              </div>
-              {isQtyFlagged && (
-                <p className="mt-1 text-[11px] text-red-500">
-                  {form.direction === 'Sell' ? 'Sell quantity should be negative' : 'Buy quantity should be positive'}
-                </p>
-              )}
+              <input
+                type="number"
+                step="any"
+                min="0"
+                value={form.qty}
+                onChange={set('qty')}
+                placeholder="0"
+                required
+                className={inputCls}
+              />
             </div>
 
             {/* ── Note (full width) ── */}
