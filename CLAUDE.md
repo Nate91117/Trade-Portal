@@ -6,34 +6,34 @@ Intercompany futures trade entry and management UI for Pilot Flying J.
 - **Framework**: Next.js 14 App Router
 - **Styling**: Tailwind CSS — primary red `#E11932`
 - **Icons**: lucide-react
-- **DB**: Neon serverless PostgreSQL via `@neondatabase/serverless`
-- **Deploy**: Vercel (region: `iad1` to co-locate with Neon US East)
+- **DB**: Neon serverless PostgreSQL via `@neondatabase/serverless` (provisioned via Vercel Storage integration)
+- **Deploy**: Vercel — live at https://github.com/Nate91117/Trade-Portal
 
 ## Status
-- Code complete — not yet deployed or DB-connected
-- No `.env.local` created yet (copy from `.env.local.example`)
-- `DATABASE_URL` not set
+- **Live and DB-connected**
+- `DATABASE_URL` is set automatically via Vercel + Neon integration (no manual env var needed)
+- Migration has been run — `trades` table exists
 
-## Setup Steps (do once)
+## Local Dev Setup (optional)
 1. `npm install`
-2. Copy `.env.local.example` → `.env.local`, fill in Neon `DATABASE_URL`
+2. In Vercel → Storage → Neon DB → copy the `.env.local` snippet into a new `.env.local` file
 3. `npm run dev`
-4. Visit `http://localhost:3000/api/migrate` to create the `trades` table
-
-## Deploy Steps
-1. Push to GitHub
-2. Import repo at vercel.com/new
-3. Add `DATABASE_URL` env var in Vercel project settings
-4. Redeploy, then visit `/api/migrate` once on the live URL
+4. Visit `http://localhost:3000/api/migrate` if running against a fresh DB
 
 ## Key Files
-- `lib/constants.ts` — edit dropdown options (strategies, traders, products, entity/account defaults)
+- `lib/constants.ts` — strategies, traders, products, contract months, and STRATEGY_CONFIG (entity/account mapping)
 - `db/schema.sql` — source of truth for schema; `app/api/migrate/route.ts` runs it
 - `app/api/trades/route.ts` — GET (list/filter) + POST
 - `app/api/trades/[id]/route.ts` — PUT + DELETE
-- `components/TradeEntry.tsx` — form, QTY validation, live net summary
-- `components/TodaysTrades.tsx` — inline edit, optimistic delete
+- `components/TradeEntry.tsx` — entry form; strategy drives entity/account auto-fill; QTY always positive, sign applied from Buy/Sell on submit
+- `components/TodaysTrades.tsx` — inline edit (strategy cascades to entity/account), optimistic delete
 - `components/HistoricalArchive.tsx` — date range, search, CSV export
+
+## Business Logic
+- **Strategy → Entity/Account**: Strategies 1–3 map to Entity `Tartan` (PFJ-001–003); Strategies 4–10 map to Entity `PTC` (PFJ-004–010). Defined in `STRATEGY_CONFIG` in `lib/constants.ts`.
+- **QTY sign**: Users always enter positive quantities. Buy trades store positive qty; Sell trades store negative qty. Net position summary and trade displays are sign-aware.
+- **Contract months**: 12 months rolling from current month, formatted with CME codes (e.g. `H - March 2026`)
+- **Products**: HO - Diesel, RB - Gasoline, C - Corn
 
 ## Schema
 ```sql
@@ -47,8 +47,7 @@ trades (
 ```
 
 ## Potential Phase 2 Tasks
-- Authentication (currently no login — header shows static "Trader")
 - Status toggle button (mark Pending → Synced from Today's Trades view)
-- Multi-entity support (per-user entity/account auto-fill)
 - Trade blotter PDF export
 - Admin page to manage dropdown values from the UI
+- Authentication (currently open — anyone with the URL can access)
