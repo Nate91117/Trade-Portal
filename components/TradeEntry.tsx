@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Send, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import type { Trade } from '@/lib/types';
 import {
-  STRATEGIES, TRADERS, ACCOUNTS, PRODUCTS, CONTRACT_MONTHS,
-  DEFAULT_ENTITY, DEFAULT_ACCOUNT, getCurrentContractMonth,
+  STRATEGIES, TRADERS, STRATEGY_CONFIG, PRODUCTS, CONTRACT_MONTHS,
+  getCurrentContractMonth,
 } from '@/lib/constants';
 
 /* ── helpers ─────────────────────────────────────────── */
@@ -14,11 +14,13 @@ function getToday(): string {
 }
 
 function buildDefaultForm() {
+  const defaultStrategy = STRATEGIES[0];
+  const { entity, account } = STRATEGY_CONFIG[defaultStrategy];
   return {
     trade_date: getToday(),
-    entity:    DEFAULT_ENTITY,
-    account:   DEFAULT_ACCOUNT,
-    strategy:  STRATEGIES[0],
+    entity,
+    account,
+    strategy:  defaultStrategy,
     trader:    TRADERS[0],
     direction: 'Buy' as 'Buy' | 'Sell',
     month:     getCurrentContractMonth(),
@@ -138,17 +140,25 @@ export default function TradeEntry() {
               <label className={labelCls}>Entity</label>
               <input type="text" value={form.entity} readOnly className={readonlyCls} />
             </div>
+
             <div>
               <label className={labelCls}>Account</label>
-              <select value={form.account} onChange={set('account')} className={selectCls} required>
-                {ACCOUNTS.map(a => <option key={a}>{a}</option>)}
-              </select>
+              <input type="text" value={form.account} readOnly className={readonlyCls} />
             </div>
 
             {/* ── Dropdowns ── */}
             <div>
               <label className={labelCls}>Strategy</label>
-              <select value={form.strategy} onChange={set('strategy')} className={selectCls} required>
+              <select
+                value={form.strategy}
+                onChange={e => {
+                  const strategy = e.target.value;
+                  const { entity, account } = STRATEGY_CONFIG[strategy];
+                  setForm(f => ({ ...f, strategy, entity, account }));
+                }}
+                className={selectCls}
+                required
+              >
                 {STRATEGIES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>

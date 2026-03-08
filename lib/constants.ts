@@ -20,27 +20,29 @@ export const TRADERS = [
   'Emily Carter',
 ];
 
-export const ACCOUNTS = [
-  'PFJ-001',
-  'PFJ-002',
-  'PFJ-003',
-  'PFJ-004',
-  'PFJ-005',
-  'PFJ-006',
-  'PFJ-007',
-  'PFJ-008',
-  'PFJ-009',
-  'PFJ-010',
-];
-
 export const PRODUCTS = [
   'HO - Diesel',
   'RB - Gasoline',
   'C - Corn',
 ];
 
-export const DEFAULT_ENTITY = 'PFJ Trading LLC';
-export const DEFAULT_ACCOUNT = 'PFJ-001';
+export interface StrategyConfig {
+  account: string;
+  entity: string;
+}
+
+export const STRATEGY_CONFIG: Record<string, StrategyConfig> = {
+  'Strategy 1':  { account: 'PFJ-001', entity: 'Tartan' },
+  'Strategy 2':  { account: 'PFJ-002', entity: 'Tartan' },
+  'Strategy 3':  { account: 'PFJ-003', entity: 'Tartan' },
+  'Strategy 4':  { account: 'PFJ-004', entity: 'PTC' },
+  'Strategy 5':  { account: 'PFJ-005', entity: 'PTC' },
+  'Strategy 6':  { account: 'PFJ-006', entity: 'PTC' },
+  'Strategy 7':  { account: 'PFJ-007', entity: 'PTC' },
+  'Strategy 8':  { account: 'PFJ-008', entity: 'PTC' },
+  'Strategy 9':  { account: 'PFJ-009', entity: 'PTC' },
+  'Strategy 10': { account: 'PFJ-010', entity: 'PTC' },
+};
 
 const CME_CODES: Record<number, string> = {
   0: 'F', 1: 'G', 2: 'H', 3: 'J', 4: 'K', 5: 'M',
