@@ -1,4 +1,4 @@
-import { sql } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
 const SCHEMA = `
@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS trades (
 
 async function runMigration() {
   try {
+    const sql = getDb();
     await sql(SCHEMA);
     return NextResponse.json({ ok: true, message: 'Migration complete — trades table is ready.' });
   } catch (err) {

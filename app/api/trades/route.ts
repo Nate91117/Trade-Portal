@@ -1,8 +1,9 @@
-import { sql } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
+    const sql = getDb();
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
     const from = searchParams.get('from');
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const sql = getDb();
     const body = await request.json();
     const { trade_date, entity, account, strategy, trader, direction, month, product, qty, note } = body;
 

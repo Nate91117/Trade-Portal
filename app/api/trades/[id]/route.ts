@@ -1,4 +1,4 @@
-import { sql } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
@@ -6,6 +6,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const sql = getDb();
     const id = parseInt(params.id, 10);
     if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
@@ -47,6 +48,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const sql = getDb();
     const id = parseInt(params.id, 10);
     if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
