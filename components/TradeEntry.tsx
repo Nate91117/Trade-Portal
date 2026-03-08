@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Send, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import type { Trade } from '@/lib/types';
 import {
-  STRATEGIES, TRADERS, PRODUCTS, CONTRACT_MONTHS,
+  STRATEGIES, TRADERS, ACCOUNTS, PRODUCTS, CONTRACT_MONTHS,
   DEFAULT_ENTITY, DEFAULT_ACCOUNT, getCurrentContractMonth,
 } from '@/lib/constants';
 
@@ -140,7 +140,9 @@ export default function TradeEntry() {
             </div>
             <div>
               <label className={labelCls}>Account</label>
-              <input type="text" value={form.account} readOnly className={readonlyCls} />
+              <select value={form.account} onChange={set('account')} className={selectCls} required>
+                {ACCOUNTS.map(a => <option key={a}>{a}</option>)}
+              </select>
             </div>
 
             {/* ── Dropdowns ── */}
