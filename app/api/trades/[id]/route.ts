@@ -11,23 +11,31 @@ export async function PUT(
     if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
     const body = await request.json();
-    const { trade_date, entity, account, strategy, trader, direction, month, product, qty, note, status } = body;
+    const {
+      trade_date, trade_type, entity, account, strategy, trader,
+      direction, month, product, qty, note,
+      strategy_2, account_2, gives_takes, status,
+    } = body;
 
     const result = await sql`
       UPDATE trades
       SET
-        trade_date = ${trade_date},
-        entity     = ${entity},
-        account    = ${account},
-        strategy   = ${strategy},
-        trader     = ${trader},
-        direction  = ${direction},
-        month      = ${month},
-        product    = ${product},
-        qty        = ${qty},
-        note       = ${note || null},
-        status     = ${status},
-        updated_at = NOW()
+        trade_date  = ${trade_date},
+        trade_type  = ${trade_type},
+        entity      = ${entity ?? null},
+        account     = ${account},
+        strategy    = ${strategy},
+        trader      = ${trader ?? null},
+        direction   = ${direction ?? null},
+        month       = ${month},
+        product     = ${product},
+        qty         = ${qty},
+        note        = ${note || null},
+        strategy_2  = ${strategy_2 ?? null},
+        account_2   = ${account_2 ?? null},
+        gives_takes = ${gives_takes ?? null},
+        status      = ${status},
+        updated_at  = NOW()
       WHERE id = ${id}
       RETURNING *
     `;

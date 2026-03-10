@@ -8,32 +8,65 @@ export async function GET(request: NextRequest) {
     const date = searchParams.get('date');
     const from = searchParams.get('from');
     const to = searchParams.get('to');
+    const type = searchParams.get('type'); // 'TAS' | 'Internal' | null (all)
 
     let trades;
 
     if (date === 'today') {
-      trades = await sql`
-        SELECT * FROM trades
-        WHERE trade_date = CURRENT_DATE
-        ORDER BY created_at DESC
-      `;
+      if (type) {
+        trades = await sql`
+          SELECT * FROM trades
+          WHERE trade_date = CURRENT_DATE AND trade_type = ${type}
+          ORDER BY created_at DESC
+        `;
+      } else {
+        trades = await sql`
+          SELECT * FROM trades
+          WHERE trade_date = CURRENT_DATE
+          ORDER BY created_at DESC
+        `;
+      }
     } else if (date) {
-      trades = await sql`
-        SELECT * FROM trades
-        WHERE trade_date = ${date}
-        ORDER BY created_at DESC
-      `;
+      if (type) {
+        trades = await sql`
+          SELECT * FROM trades
+          WHERE trade_date = ${date} AND trade_type = ${type}
+          ORDER BY created_at DESC
+        `;
+      } else {
+        trades = await sql`
+          SELECT * FROM trades
+          WHERE trade_date = ${date}
+          ORDER BY created_at DESC
+        `;
+      }
     } else if (from && to) {
-      trades = await sql`
-        SELECT * FROM trades
-        WHERE trade_date BETWEEN ${from} AND ${to}
-        ORDER BY trade_date DESC, created_at DESC
-      `;
+      if (type) {
+        trades = await sql`
+          SELECT * FROM trades
+          WHERE trade_date BETWEEN ${from} AND ${to} AND trade_type = ${type}
+          ORDER BY trade_date DESC, created_at DESC
+        `;
+      } else {
+        trades = await sql`
+          SELECT * FROM trades
+          WHERE trade_date BETWEEN ${from} AND ${to}
+          ORDER BY trade_date DESC, created_at DESC
+        `;
+      }
     } else {
-      trades = await sql`
-        SELECT * FROM trades
-        ORDER BY trade_date DESC, created_at DESC
-      `;
+      if (type) {
+        trades = await sql`
+          SELECT * FROM trades
+          WHERE trade_type = ${type}
+          ORDER BY trade_date DESC, created_at DESC
+        `;
+      } else {
+        trades = await sql`
+          SELECT * FROM trades
+          ORDER BY trade_date DESC, created_at DESC
+        `;
+      }
     }
 
     return NextResponse.json(trades);
@@ -47,25 +80,26 @@ export async function POST(request: NextRequest) {
   try {
     const sql = getDb();
     const body = await request.json();
-    const { trade_date, entity, account, strategy, trader, direction, month, product, qty, note } = body;
+    const {
+      trade_date, trade_type, entity, account, strategy, trader,
+      direction, month, product, qty, note,
+      strategy_2, account_2, gives_takes,
+    } = body;
 
-    if (!trade_date || !entity || !account || !strategy || !trader || !direction || !month || !product || qty == null) {
+    if (!trade_date || !trade_type || !account || !strategy || !month || !product || qty == null) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const result = await sql`
-      INSERT INTO trades (trade_date, entity, account, strategy, trader, direction, month, product, qty, note)
+      INSERT INTO trades (
+        trade_date, trade_type, entity, account, strategy, trader,
+        direction, month, product, qty, note,
+        strategy_2, account_2, gives_takes
+      )
       VALUES (
-        ${trade_date},
-        ${entity},
-        ${account},
-        ${strategy},
-        ${trader},
-        ${direction},
-        ${month},
-        ${product},
-        ${qty},
-        ${note || null}
+        ${trade_date}, ${trade_type}, ${entity ?? null}, ${account}, ${strategy},
+        ${trader ?? null}, ${direction ?? null}, ${month}, ${product}, ${qty},
+        ${note || null}, ${strategy_2 ?? null}, ${account_2 ?? null}, ${gives_takes ?? null}
       )
       RETURNING *
     `;
