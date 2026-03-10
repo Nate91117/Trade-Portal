@@ -89,7 +89,7 @@ export default function HistoricalArchive() {
   const filtered = search
     ? trades.filter(t => {
         const q = search.toLowerCase();
-        return [t.entity, t.account, t.strategy, t.trader, t.product, t.month, t.direction, t.status, t.note ?? '']
+        return [t.entity ?? '', t.account, t.strategy, t.trader ?? '', t.product, t.month, t.direction ?? '', t.status, t.note ?? '']
           .some(field => field.toLowerCase().includes(q));
       })
     : trades;
