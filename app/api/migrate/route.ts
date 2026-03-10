@@ -24,21 +24,23 @@ CREATE TABLE IF NOT EXISTS trades (
 );
 `;
 
-const MIGRATIONS = `
-ALTER TABLE trades ADD COLUMN IF NOT EXISTS trade_type TEXT NOT NULL DEFAULT 'TAS';
-ALTER TABLE trades ADD COLUMN IF NOT EXISTS strategy_2  TEXT;
-ALTER TABLE trades ADD COLUMN IF NOT EXISTS account_2   TEXT;
-ALTER TABLE trades ADD COLUMN IF NOT EXISTS gives_takes TEXT;
-ALTER TABLE trades ALTER COLUMN entity    DROP NOT NULL;
-ALTER TABLE trades ALTER COLUMN trader    DROP NOT NULL;
-ALTER TABLE trades ALTER COLUMN direction DROP NOT NULL;
-`;
+const MIGRATIONS = [
+  `ALTER TABLE trades ADD COLUMN IF NOT EXISTS trade_type TEXT NOT NULL DEFAULT 'TAS'`,
+  `ALTER TABLE trades ADD COLUMN IF NOT EXISTS strategy_2  TEXT`,
+  `ALTER TABLE trades ADD COLUMN IF NOT EXISTS account_2   TEXT`,
+  `ALTER TABLE trades ADD COLUMN IF NOT EXISTS gives_takes TEXT`,
+  `ALTER TABLE trades ALTER COLUMN entity    DROP NOT NULL`,
+  `ALTER TABLE trades ALTER COLUMN trader    DROP NOT NULL`,
+  `ALTER TABLE trades ALTER COLUMN direction DROP NOT NULL`,
+];
 
 async function runMigration() {
   try {
     const sql = getDb();
     await sql(SCHEMA);
-    await sql(MIGRATIONS);
+    for (const statement of MIGRATIONS) {
+      await sql(statement);
+    }
     return NextResponse.json({ ok: true, message: 'Migration complete — trades table is ready.' });
   } catch (err) {
     console.error('[migrate]', err);
