@@ -1,11 +1,25 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Pencil, Trash2, Check, X, RefreshCw, AlertCircle, Filter } from 'lucide-react';
+import { Pencil, Trash2, Check, X, RefreshCw, AlertCircle, Filter, SlidersHorizontal } from 'lucide-react';
 import type { Trade } from '@/lib/types';
 import { STRATEGIES, PRODUCTS, CONTRACT_MONTHS, STRATEGY_CONFIG } from '@/lib/constants';
 
 function getToday() { return new Date().toISOString().split('T')[0]; }
+
+const STATUSES = ['Pending', 'Synced'];
+const GIVES_TAKES = ['Gives', 'Takes'];
+
+interface Filters {
+  strategy: string;
+  gives_takes: string;
+  strategy_2: string;
+  product: string;
+  month: string;
+  status: string;
+}
+
+const EMPTY_FILTERS: Filters = { strategy: '', gives_takes: '', strategy_2: '', product: '', month: '', status: '' };
 
 function StatusBadge({ status }: { status: string }) {
   return (
@@ -99,6 +113,8 @@ export default function InternalTradesTab() {
   const [editId, setEditId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<Partial<Trade>>({});
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [showFilters, setShowFilters] = useState(false);
 
   const fetchTrades = useCallback(async () => {
     setLoading(true);
@@ -115,6 +131,20 @@ export default function InternalTradesTab() {
   }, [date]);
 
   useEffect(() => { fetchTrades(); }, [fetchTrades]);
+
+  const setFilter = (key: keyof Filters) => (e: React.ChangeEvent<HTMLSelectElement>) =>
+    setFilters(f => ({ ...f, [key]: e.target.value }));
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
+  const filtered = trades.filter(t =>
+    (!filters.strategy    || t.strategy    === filters.strategy)    &&
+    (!filters.gives_takes || t.gives_takes === filters.gives_takes) &&
+    (!filters.strategy_2  || t.strategy_2  === filters.strategy_2)  &&
+    (!filters.product     || t.product     === filters.product)     &&
+    (!filters.month       || t.month       === filters.month)       &&
+    (!filters.status      || t.status      === filters.status)
+  );
 
   function startEdit(trade: Trade) { setEditId(trade.id); setEditForm({ ...trade }); setDeleteTarget(null); }
   function cancelEdit() { setEditId(null); setEditForm({}); }
@@ -152,31 +182,81 @@ export default function InternalTradesTab() {
   }
 
   const inputCls = 'px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E11932]/40 focus:border-[#E11932] transition-colors bg-white';
+  const filterSelectCls = 'px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#E11932]/40 focus:border-[#E11932] transition-colors text-gray-700';
 
   return (
     <div className="space-y-4">
-      {/* Date filter */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+      {/* Date + filter controls */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-3">
         <div className="flex items-end gap-3">
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Date</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} />
           </div>
           <button onClick={fetchTrades} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-[#E11932] hover:bg-[#C41529] text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 shadow-sm">
-            <Filter size={14} />
-            {loading ? 'Loading…' : 'Apply'}
+            <Filter size={14} />{loading ? 'Loading…' : 'Apply'}
           </button>
-          <button onClick={() => setDate(getToday())} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={() => setDate(getToday())} className="text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
             Today
           </button>
+          <button
+            onClick={() => setShowFilters(f => !f)}
+            className={`flex items-center gap-2 ml-auto px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+              showFilters || activeFilterCount > 0
+                ? 'border-[#E11932] text-[#E11932] bg-red-50'
+                : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <SlidersHorizontal size={14} />
+            Filters{activeFilterCount > 0 && <span className="ml-1 bg-[#E11932] text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{activeFilterCount}</span>}
+          </button>
         </div>
+
+        {/* Filter dropdowns */}
+        {showFilters && (
+          <div className="pt-3 border-t border-gray-100">
+            <div className="flex flex-wrap gap-2 items-center">
+              <select value={filters.strategy} onChange={setFilter('strategy')} className={filterSelectCls}>
+                <option value="">All Strategy 1</option>
+                {STRATEGIES.map(s => <option key={s}>{s}</option>)}
+              </select>
+              <select value={filters.gives_takes} onChange={setFilter('gives_takes')} className={filterSelectCls}>
+                <option value="">Gives & Takes</option>
+                {GIVES_TAKES.map(g => <option key={g}>{g}</option>)}
+              </select>
+              <select value={filters.strategy_2} onChange={setFilter('strategy_2')} className={filterSelectCls}>
+                <option value="">All Strategy 2</option>
+                {STRATEGIES.map(s => <option key={s}>{s}</option>)}
+              </select>
+              <select value={filters.product} onChange={setFilter('product')} className={filterSelectCls}>
+                <option value="">All Products</option>
+                {PRODUCTS.map(p => <option key={p}>{p}</option>)}
+              </select>
+              <select value={filters.month} onChange={setFilter('month')} className={filterSelectCls}>
+                <option value="">All Months</option>
+                {CONTRACT_MONTHS.map(m => <option key={m}>{m}</option>)}
+              </select>
+              <select value={filters.status} onChange={setFilter('status')} className={filterSelectCls}>
+                <option value="">All Statuses</option>
+                {STATUSES.map(s => <option key={s}>{s}</option>)}
+              </select>
+              {activeFilterCount > 0 && (
+                <button onClick={() => setFilters(EMPTY_FILTERS)} className="text-xs text-gray-400 hover:text-gray-700 underline ml-1">
+                  Clear all
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Internal Trades</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{date} · {trades.length} record{trades.length !== 1 ? 's' : ''}</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {date} · {filtered.length}{filtered.length !== trades.length ? ` of ${trades.length}` : ''} record{filtered.length !== 1 ? 's' : ''}
+            </p>
           </div>
           <button onClick={fetchTrades} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
             <RefreshCw size={13} /> Refresh
@@ -195,8 +275,10 @@ export default function InternalTradesTab() {
           <div className="flex items-center justify-center h-48">
             <div className="w-8 h-8 border-2 border-[#E11932] border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : trades.length === 0 ? (
-          <div className="px-6 py-20 text-center"><p className="text-sm text-gray-500">No internal trades for this date.</p></div>
+        ) : filtered.length === 0 ? (
+          <div className="px-6 py-20 text-center">
+            <p className="text-sm text-gray-500">{trades.length === 0 ? 'No internal trades for this date.' : 'No trades match the current filters.'}</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -208,7 +290,7 @@ export default function InternalTradesTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {trades.map(trade =>
+                {filtered.map(trade =>
                   editId === trade.id ? (
                     <EditRow key={trade.id} editForm={editForm} setEditForm={setEditForm} onSave={() => saveEdit(trade.id)} onCancel={cancelEdit} />
                   ) : (
