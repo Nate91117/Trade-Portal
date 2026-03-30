@@ -95,6 +95,31 @@ function EditRow({
         />
       </td>
       <td className="px-2 py-2">
+        {editForm.trade_type === 'Internal' ? (
+          <select
+            value={editForm.price_type ?? 'Settle Price'}
+            onChange={e => setEditForm(f => ({ ...f, price_type: e.target.value as 'Settle Price' | 'Type in', price: e.target.value === 'Settle Price' ? null : f.price }))}
+            className={sel}
+          >
+            <option>Settle Price</option>
+            <option>Type in</option>
+          </select>
+        ) : <span className="text-gray-300">—</span>}
+      </td>
+      <td className="px-2 py-2">
+        {editForm.trade_type === 'Internal' && editForm.price_type === 'Type in' ? (
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            max="10"
+            value={String(editForm.price ?? '')}
+            onChange={e => setEditForm(f => ({ ...f, price: parseFloat(e.target.value) }))}
+            className={inp}
+          />
+        ) : <span className="text-gray-300">—</span>}
+      </td>
+      <td className="px-2 py-2">
         <input type="text" value={editForm.note ?? ''} onChange={upd('note' as keyof Trade)} className={inp} />
       </td>
       <td className="px-2 py-2">
@@ -124,7 +149,7 @@ function EditRow({
 /* ── Main component ──────────────────────────────────── */
 const COL_HEADERS = [
   'Date', 'Entity', 'Account', 'Strategy', 'Trader',
-  'Dir', 'Month', 'Product', 'QTY', 'Note', 'Status', '',
+  'Dir', 'Month', 'Product', 'QTY', 'Price', 'Price ($)', 'Note', 'Status', '',
 ];
 
 export default function TodaysTrades() {
@@ -285,6 +310,12 @@ export default function TodaysTrades() {
                       Number(trade.qty) > 0 ? 'text-green-600' : Number(trade.qty) < 0 ? 'text-[#E11932]' : 'text-gray-600'
                     }`}>
                       {Number(trade.qty).toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2.5 text-gray-500">{trade.price_type || '—'}</td>
+                    <td className="px-3 py-2.5 text-gray-700 font-mono tabular-nums">
+                      {trade.price_type === 'Type in' && trade.price != null
+                        ? `$${Number(trade.price).toFixed(2)}`
+                        : '—'}
                     </td>
                     <td className="px-3 py-2.5 text-gray-400 max-w-[130px] truncate">{trade.note || '—'}</td>
                     <td className="px-3 py-2.5"><StatusBadge status={trade.status} /></td>
