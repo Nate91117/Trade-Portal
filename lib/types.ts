@@ -14,6 +14,8 @@ export interface Trade {
   strategy_2: string | null;
   account_2: string | null;
   gives_takes: 'Gives' | 'Takes' | null;
+  price_type: 'Settle Price' | 'Type in' | null;
+  price: number | null;
   status: 'Pending' | 'Synced';
   created_at: string;
   updated_at: string;

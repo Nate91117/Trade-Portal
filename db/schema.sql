@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS trades (
   strategy_2  TEXT,
   account_2   TEXT,
   gives_takes TEXT CHECK (gives_takes IN ('Gives', 'Takes')),
+  price_type  TEXT CHECK (price_type IN ('Settle Price', 'Type in')),
+  price       NUMERIC,
   status      TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Synced')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()

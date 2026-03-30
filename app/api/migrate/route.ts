@@ -32,6 +32,8 @@ const MIGRATIONS = [
   `ALTER TABLE trades ALTER COLUMN entity    DROP NOT NULL`,
   `ALTER TABLE trades ALTER COLUMN trader    DROP NOT NULL`,
   `ALTER TABLE trades ALTER COLUMN direction DROP NOT NULL`,
+  `ALTER TABLE trades ADD COLUMN IF NOT EXISTS price_type TEXT`,
+  `ALTER TABLE trades ADD COLUMN IF NOT EXISTS price NUMERIC`,
 ];
 
 async function runMigration() {

@@ -14,7 +14,7 @@ export async function PUT(
     const {
       trade_date, trade_type, entity, account, strategy, trader,
       direction, month, product, qty, note,
-      strategy_2, account_2, gives_takes, status,
+      strategy_2, account_2, gives_takes, price_type, price, status,
     } = body;
 
     const result = await sql`
@@ -34,6 +34,8 @@ export async function PUT(
         strategy_2  = ${strategy_2 ?? null},
         account_2   = ${account_2 ?? null},
         gives_takes = ${gives_takes ?? null},
+        price_type  = ${price_type ?? null},
+        price       = ${price ?? null},
         status      = ${status},
         updated_at  = NOW()
       WHERE id = ${id}

@@ -45,6 +45,8 @@ function buildInternalForm() {
     month:       getCurrentContractMonth(),
     product:     PRODUCTS[0],
     qty:         '',
+    price_type:  'Settle Price' as 'Settle Price' | 'Type in',
+    price:       '',
     note:        '',
   };
 }
@@ -119,7 +121,13 @@ export default function TradeEntry() {
             : Math.abs(parseFloat(tasForm.qty)),
         };
       } else {
-        body = { ...internalForm, qty: Math.abs(parseFloat(internalForm.qty)) };
+        body = {
+          ...internalForm,
+          qty: Math.abs(parseFloat(internalForm.qty)),
+          price: internalForm.price_type === 'Type in' && internalForm.price
+            ? parseFloat(internalForm.price)
+            : null,
+        };
       }
 
       const res = await fetch('/api/trades', {
@@ -268,7 +276,7 @@ export default function TradeEntry() {
             <div className="grid grid-cols-3 gap-x-4 gap-y-4">
               <div>
                 <label className={labelCls}>Trade Date</label>
-                <input type="text" value={internalForm.trade_date} readOnly className={readonlyCls} />
+                <input type="date" value={internalForm.trade_date} onChange={setInt('trade_date')} className={inputCls} required />
               </div>
               <div>
                 <label className={labelCls}>Contract Month</label>
@@ -345,7 +353,37 @@ export default function TradeEntry() {
                 />
               </div>
 
-              <div className="col-span-2">
+              <div>
+                <label className={labelCls}>Price</label>
+                <select
+                  value={internalForm.price_type}
+                  onChange={e => setInternalForm(f => ({ ...f, price_type: e.target.value as 'Settle Price' | 'Type in', price: '' }))}
+                  className={selectCls}
+                  required
+                >
+                  <option>Settle Price</option>
+                  <option>Type in</option>
+                </select>
+              </div>
+
+              {internalForm.price_type === 'Type in' && (
+                <div>
+                  <label className={labelCls}>Price ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="10"
+                    value={internalForm.price}
+                    onChange={setInt('price')}
+                    placeholder="0.00"
+                    required
+                    className={inputCls}
+                  />
+                </div>
+              )}
+
+              <div className={internalForm.price_type === 'Type in' ? 'col-span-3' : 'col-span-2'}>
                 <label className={labelCls}>Note <span className="normal-case font-normal">(optional)</span></label>
                 <input type="text" value={internalForm.note} onChange={setInt('note')} placeholder="Add a note…" className={inputCls} />
               </div>
