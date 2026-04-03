@@ -80,43 +80,68 @@ export default function NetPosition() {
       )}
 
       {/* Results */}
-      {hasSearched && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">TAS Net Position</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{date} · {rows.length} row{rows.length !== 1 ? 's' : ''}</p>
-          </div>
-          {rows.length === 0 ? (
-            <div className="px-6 py-20 text-center"><p className="text-sm text-gray-500">No TAS trades found for this date.</p></div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    {['Entity', 'Product', 'Month', 'Net QTY'].map(h => (
-                      <th key={h} className={`px-6 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 ${h === 'Net QTY' ? 'text-right' : 'text-left'}`}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {rows.map((row, i) => (
-                    <tr key={i} className="hover:bg-gray-50/60 transition-colors">
-                      <td className="px-6 py-3 text-gray-700 font-medium">{row.entity}</td>
-                      <td className="px-6 py-3 text-gray-700">{row.product}</td>
-                      <td className="px-6 py-3 text-gray-500">{row.month}</td>
-                      <td className={`px-6 py-3 text-right font-mono font-semibold tabular-nums ${
-                        row.net_qty > 0 ? 'text-green-600' : row.net_qty < 0 ? 'text-[#E11932]' : 'text-gray-500'
-                      }`}>
-                        {row.net_qty > 0 ? '+' : ''}{row.net_qty.toLocaleString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {hasSearched && (() => {
+        // Group rows by entity for visual separation (matches Trade Entry summary)
+        const entityGroups: { entity: string; rows: NetRow[] }[] = [];
+        let lastEntity = '';
+        for (const row of rows) {
+          if (row.entity !== lastEntity) {
+            entityGroups.push({ entity: row.entity, rows: [row] });
+            lastEntity = row.entity;
+          } else {
+            entityGroups[entityGroups.length - 1].rows.push(row);
+          }
+        }
+
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="px-6 py-3.5 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-900">TAS Net Position</h3>
+              <span className="text-xs text-gray-400">{date} · {rows.length} row{rows.length !== 1 ? 's' : ''}</span>
             </div>
-          )}
-        </div>
-      )}
+            {rows.length === 0 ? (
+              <div className="px-6 py-20 text-center"><p className="text-sm text-gray-500">No TAS trades found for this date.</p></div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      {['Entity', 'Product', 'Month', 'Net QTY'].map(h => (
+                        <th key={h} className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 first:pl-6 last:pr-6 ${h === 'Net QTY' ? 'text-right' : 'text-left'}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entityGroups.map((group, gi) => (
+                      group.rows.map((row, ri) => (
+                        <tr
+                          key={`${group.entity}-${ri}`}
+                          className={`
+                            ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}
+                            ${gi > 0 && ri === 0 ? 'border-t-2 border-gray-300' : ri > 0 ? 'border-t border-gray-100' : 'border-t border-gray-100'}
+                            hover:bg-gray-50/60 transition-colors
+                          `}
+                        >
+                          <td className="px-5 py-2.5 pl-6 text-gray-700 font-medium">
+                            {ri === 0 ? row.entity : ''}
+                          </td>
+                          <td className="px-5 py-2.5 text-gray-700 font-medium">{row.product}</td>
+                          <td className="px-5 py-2.5 text-gray-500">{row.month}</td>
+                          <td className={`px-5 py-2.5 pr-6 text-right font-mono font-semibold ${
+                            row.net_qty > 0 ? 'text-green-600' : row.net_qty < 0 ? 'text-[#E11932]' : 'text-gray-500'
+                          }`}>
+                            {row.net_qty > 0 ? '+' : ''}{row.net_qty.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {!hasSearched && !loading && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-20 text-center">
