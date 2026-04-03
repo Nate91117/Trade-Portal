@@ -6,8 +6,9 @@ import Header from '@/components/Header';
 import TradeEntry from '@/components/TradeEntry';
 import TASTradesTab from '@/components/TASTradesTab';
 import InternalTradesTab from '@/components/InternalTradesTab';
+import NetPosition from '@/components/NetPosition';
 
-export type Tab = 'entry' | 'tas' | 'internal';
+export type Tab = 'entry' | 'tas' | 'internal' | 'net';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('entry');
@@ -21,6 +22,7 @@ export default function Home() {
           {activeTab === 'entry'    && <TradeEntry />}
           {activeTab === 'tas'      && <TASTradesTab />}
           {activeTab === 'internal' && <InternalTradesTab />}
+          {activeTab === 'net'      && <NetPosition />}
         </main>
       </div>
     </div>

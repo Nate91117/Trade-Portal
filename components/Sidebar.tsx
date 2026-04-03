@@ -1,6 +1,6 @@
 'use client';
 
-import { PenSquare, ArrowLeftRight, ListOrdered } from 'lucide-react';
+import { PenSquare, ArrowLeftRight, ListOrdered, BarChart2 } from 'lucide-react';
 import type { Tab } from '@/app/page';
 
 interface SidebarProps {
@@ -12,6 +12,7 @@ const NAV_ITEMS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'entry',    label: 'Trade Entry',      icon: PenSquare     },
   { id: 'tas',      label: 'TAS Trades',       icon: ListOrdered   },
   { id: 'internal', label: 'Internal Trades',  icon: ArrowLeftRight },
+  { id: 'net',      label: 'Net Position',     icon: BarChart2     },
 ];
 
 export default function Sidebar({ activeTab, onTabChange }: SidebarProps) {
