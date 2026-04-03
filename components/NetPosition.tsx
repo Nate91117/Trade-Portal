@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, AlertCircle, X } from 'lucide-react';
 import type { Trade } from '@/lib/types';
+import { monthSortKey } from '@/lib/constants';
 
 function getToday() { return new Date().toISOString().split('T')[0]; }
 
@@ -34,7 +35,7 @@ export default function NetPosition({ date, onDateChange }: { date: string; onDa
       setRows(Array.from(map.entries()).map(([key, net_qty]) => {
         const [entity, product, month] = key.split('||');
         return { entity, product, month, net_qty };
-      }).sort((a, b) => a.entity.localeCompare(b.entity) || a.product.localeCompare(b.product)));
+      }).sort((a, b) => a.entity.localeCompare(b.entity) || a.product.localeCompare(b.product) || (monthSortKey(a.month) - monthSortKey(b.month))));
     } catch {
       setError('Failed to load trades.');
     } finally {

@@ -6,7 +6,7 @@ import type { Trade } from '@/lib/types';
 import SearchableSelect from './SearchableSelect';
 import {
   STRATEGIES, TRADERS, STRATEGY_CONFIG, PRODUCTS, CONTRACT_MONTHS,
-  getCurrentContractMonth,
+  getCurrentContractMonth, monthSortKey,
 } from '@/lib/constants';
 
 function getToday(): string {
@@ -138,11 +138,11 @@ export default function TradeEntry() {
         const [entity, product, month] = key.split('||');
         return { entity, product, month, net_qty };
       });
-      // Sort by entity → product → month
+      // Sort by entity → product → month (chronological)
       rows.sort((a, b) =>
         a.entity.localeCompare(b.entity) ||
         a.product.localeCompare(b.product) ||
-        a.month.localeCompare(b.month)
+        (monthSortKey(a.month) - monthSortKey(b.month))
       );
       setSummary(rows);
     } catch {

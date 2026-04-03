@@ -28,21 +28,22 @@ function EditRow({ editForm, setEditForm, onSave, onCancel }: {
   onSave: () => void;
   onCancel: () => void;
 }) {
-  const inp = 'px-1.5 py-1 border border-blue-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-full min-w-[80px]';
+  const inp = 'px-2 py-1.5 border border-gray-300 rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#E11932]/40 focus:border-[#E11932] transition-colors w-full';
+  const readonlyInp = 'px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-gray-50 text-gray-500 cursor-not-allowed w-full';
   const upd = <K extends keyof Trade>(key: K) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setEditForm(f => ({ ...f, [key]: e.target.value as Trade[K] }));
 
   return (
-    <tr className="bg-blue-50/60">
+    <tr className="bg-amber-50/60">
       <td className="px-2 py-2 pl-4">
         <input type="date" value={String(editForm.trade_date ?? '').slice(0, 10)} onChange={upd('trade_date')} className={inp} />
       </td>
       <td className="px-2 py-2">
-        <input type="text" value={editForm.entity ?? ''} readOnly className={`${inp} bg-gray-50 cursor-not-allowed`} />
+        <input type="text" value={editForm.entity ?? ''} readOnly className={readonlyInp} />
       </td>
       <td className="px-2 py-2">
-        <input type="text" value={editForm.account ?? ''} readOnly className={`${inp} bg-gray-50 cursor-not-allowed`} />
+        <input type="text" value={editForm.account ?? ''} readOnly className={readonlyInp} />
       </td>
       <td className="px-2 py-2">
         <SearchableSelect
@@ -52,6 +53,7 @@ function EditRow({ editForm, setEditForm, onSave, onCancel }: {
             const { entity, account } = STRATEGY_CONFIG[strategy];
             setEditForm(f => ({ ...f, strategy, entity, account }));
           }}
+          compact
           className="min-w-[140px]"
         />
       </td>
@@ -60,6 +62,7 @@ function EditRow({ editForm, setEditForm, onSave, onCancel }: {
           options={TRADERS}
           value={editForm.trader ?? ''}
           onChange={trader => setEditForm(f => ({ ...f, trader }))}
+          compact
           className="min-w-[120px]"
         />
       </td>
@@ -74,6 +77,7 @@ function EditRow({ editForm, setEditForm, onSave, onCancel }: {
           options={CONTRACT_MONTHS}
           value={editForm.month ?? ''}
           onChange={month => setEditForm(f => ({ ...f, month }))}
+          compact
           className="min-w-[140px]"
         />
       </td>
@@ -82,6 +86,7 @@ function EditRow({ editForm, setEditForm, onSave, onCancel }: {
           options={PRODUCTS}
           value={editForm.product ?? ''}
           onChange={product => setEditForm(f => ({ ...f, product }))}
+          compact
           className="min-w-[110px]"
         />
       </td>
@@ -102,9 +107,9 @@ function EditRow({ editForm, setEditForm, onSave, onCancel }: {
         <input type="text" value={editForm.note ?? ''} onChange={upd('note' as keyof Trade)} className={inp} />
       </td>
       <td className="px-2 py-2 pr-4">
-        <div className="flex items-center gap-1">
-          <button onClick={onSave} className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700"><Check size={13} /></button>
-          <button onClick={onCancel} className="p-1.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"><X size={13} /></button>
+        <div className="flex items-center gap-1.5">
+          <button onClick={onSave} className="p-1.5 bg-[#E11932] text-white rounded-lg hover:bg-[#C41529] transition-colors"><Check size={13} /></button>
+          <button onClick={onCancel} className="p-1.5 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors"><X size={13} /></button>
         </div>
       </td>
     </tr>

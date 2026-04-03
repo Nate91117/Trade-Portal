@@ -84,3 +84,12 @@ export function getCurrentContractMonth(): string {
   const m = now.getMonth();
   return `${CME_CODES[m]} - ${MONTH_NAMES[m]} ${now.getFullYear()}`;
 }
+
+/** Returns a numeric sort key for a contract month string like "K - May 2026" */
+export function monthSortKey(monthStr: string): number {
+  const match = monthStr.match(/- (\w+) (\d{4})/);
+  if (!match) return 0;
+  const monthIndex = MONTH_NAMES.indexOf(match[1]);
+  const year = parseInt(match[2]);
+  return year * 12 + monthIndex;
+}

@@ -10,6 +10,7 @@ interface SearchableSelectProps {
   className?: string;
   required?: boolean;
   placeholder?: string;
+  compact?: boolean;
 }
 
 export default function SearchableSelect({
@@ -19,6 +20,7 @@ export default function SearchableSelect({
   className = '',
   required,
   placeholder = 'Select…',
+  compact = false,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -54,7 +56,9 @@ export default function SearchableSelect({
           setOpen(!open);
           if (!open) setTimeout(() => inputRef.current?.focus(), 0);
         }}
-        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-left focus:outline-none focus:ring-2 focus:ring-[#E11932]/40 focus:border-[#E11932] transition-colors flex items-center justify-between gap-1"
+        className={`w-full bg-white border border-gray-300 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-[#E11932]/40 focus:border-[#E11932] transition-colors flex items-center justify-between gap-1 ${
+          compact ? 'px-2 py-1.5 text-xs' : 'px-3 py-2 text-sm'
+        }`}
       >
         <span className={value ? 'text-gray-900' : 'text-gray-400'}>
           {value || placeholder}
