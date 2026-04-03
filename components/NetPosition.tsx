@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Filter, RefreshCw, AlertCircle, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { RefreshCw, AlertCircle, X } from 'lucide-react';
 import type { Trade } from '@/lib/types';
 
 function getToday() { return new Date().toISOString().split('T')[0]; }
@@ -15,8 +15,7 @@ interface NetRow {
 
 export default function NetPosition({ date, onDateChange }: { date: string; onDateChange: (d: string) => void }) {
   const [rows, setRows] = useState<NetRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchNet = useCallback(async () => {
@@ -36,13 +35,14 @@ export default function NetPosition({ date, onDateChange }: { date: string; onDa
         const [entity, product, month] = key.split('||');
         return { entity, product, month, net_qty };
       }).sort((a, b) => a.entity.localeCompare(b.entity) || a.product.localeCompare(b.product)));
-      setHasSearched(true);
     } catch {
       setError('Failed to load trades.');
     } finally {
       setLoading(false);
     }
   }, [date]);
+
+  useEffect(() => { fetchNet(); }, [fetchNet]);
 
   const inputCls = 'px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#E11932]/40 focus:border-[#E11932] transition-colors bg-white';
 
@@ -55,18 +55,12 @@ export default function NetPosition({ date, onDateChange }: { date: string; onDa
             <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Date</label>
             <input type="date" value={date} onChange={e => onDateChange(e.target.value)} className={inputCls} />
           </div>
-          <button onClick={fetchNet} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-[#E11932] hover:bg-[#C41529] text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 shadow-sm">
-            <Filter size={14} />
-            {loading ? 'Loading…' : 'Apply'}
-          </button>
           <button onClick={() => { onDateChange(getToday()); }} className="text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
             Today
           </button>
-          {hasSearched && (
-            <button onClick={fetchNet} disabled={loading} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors ml-auto">
-              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
-            </button>
-          )}
+          <button onClick={fetchNet} disabled={loading} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors ml-auto">
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
         </div>
       </div>
 
@@ -79,7 +73,7 @@ export default function NetPosition({ date, onDateChange }: { date: string; onDa
       )}
 
       {/* Results */}
-      {hasSearched && (() => {
+      {(() => {
         // Group rows by entity for visual separation (matches Trade Entry summary)
         const entityGroups: { entity: string; rows: NetRow[] }[] = [];
         let lastEntity = '';
@@ -99,7 +93,7 @@ export default function NetPosition({ date, onDateChange }: { date: string; onDa
               <span className="text-xs text-gray-400">{date} · {rows.length} row{rows.length !== 1 ? 's' : ''}</span>
             </div>
             {rows.length === 0 ? (
-              <div className="px-6 py-20 text-center"><p className="text-sm text-gray-500">No TAS trades found for this date.</p></div>
+              <div className="px-6 py-20 text-center"><p className="text-sm text-gray-500">{loading ? 'Loading…' : 'No TAS trades found for this date.'}</p></div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -141,13 +135,6 @@ export default function NetPosition({ date, onDateChange }: { date: string; onDa
           </div>
         );
       })()}
-
-      {!hasSearched && !loading && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-20 text-center">
-          <Filter size={28} className="mx-auto text-gray-300 mb-3" />
-          <p className="text-sm text-gray-500">Select a date and click <strong>Apply</strong> to view net positions.</p>
-        </div>
-      )}
     </div>
   );
 }
