@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS trades (
   price_type  TEXT CHECK (price_type IN ('Settle Price', 'Type in')),
   price       NUMERIC,
   status      TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Synced')),
+  pfj_associated_id TEXT,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

@@ -4,19 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Pencil, Trash2, Check, X, RefreshCw, AlertCircle } from 'lucide-react';
 import type { Trade } from '@/lib/types';
 import { STRATEGIES, TRADERS, PRODUCTS, CONTRACT_MONTHS, STRATEGY_CONFIG } from '@/lib/constants';
-
-/* ── StatusBadge ──────────────────────────────────────── */
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-      status === 'Synced'
-        ? 'bg-green-100 text-green-700 ring-1 ring-green-200'
-        : 'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-200'
-    }`}>
-      {status}
-    </span>
-  );
-}
+import SearchableSelect from './SearchableSelect';
 
 /* ── Inline Edit Row ─────────────────────────────────── */
 function EditRow({
@@ -25,13 +13,12 @@ function EditRow({
   onSave,
   onCancel,
 }: {
-  editForm: Partial<Trade>;
-  setEditForm: React.Dispatch<React.SetStateAction<Partial<Trade>>>;
+  editForm: Partial<Trade> & { display_qty?: number };
+  setEditForm: React.Dispatch<React.SetStateAction<Partial<Trade> & { display_qty?: number }>>;
   onSave: () => void;
   onCancel: () => void;
 }) {
   const inp = 'px-1.5 py-1 border border-blue-300 rounded text-xs bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-full min-w-[80px]';
-  const sel = inp;
   const upd = <K extends keyof Trade>(key: K) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setEditForm(f => ({ ...f, [key]: e.target.value as Trade[K] }));
@@ -48,49 +35,57 @@ function EditRow({
         <input type="text" value={editForm.account ?? ''} onChange={upd('account')} className={inp} />
       </td>
       <td className="px-2 py-2">
-        <select
+        <SearchableSelect
+          options={STRATEGIES}
           value={editForm.strategy ?? ''}
-          onChange={e => {
-            const strategy = e.target.value;
+          onChange={strategy => {
             const { entity, account } = STRATEGY_CONFIG[strategy];
             setEditForm(f => ({ ...f, strategy, entity, account }));
           }}
-          className={sel}
-        >
-          {STRATEGIES.map(s => <option key={s}>{s}</option>)}
-        </select>
+          className="min-w-[140px]"
+        />
       </td>
       <td className="px-2 py-2">
-        <select value={editForm.trader ?? ''} onChange={upd('trader')} className={sel}>
-          {TRADERS.map(t => <option key={t}>{t}</option>)}
-        </select>
+        <SearchableSelect
+          options={TRADERS}
+          value={editForm.trader ?? ''}
+          onChange={trader => setEditForm(f => ({ ...f, trader }))}
+          className="min-w-[120px]"
+        />
       </td>
       <td className="px-2 py-2">
         <select
           value={editForm.direction ?? 'Buy'}
           onChange={e => setEditForm(f => ({ ...f, direction: e.target.value as 'Buy' | 'Sell' }))}
-          className={sel}
+          className={inp}
         >
           <option>Buy</option>
           <option>Sell</option>
         </select>
       </td>
       <td className="px-2 py-2">
-        <select value={editForm.month ?? ''} onChange={upd('month')} className={sel}>
-          {CONTRACT_MONTHS.map(m => <option key={m}>{m}</option>)}
-        </select>
+        <SearchableSelect
+          options={CONTRACT_MONTHS}
+          value={editForm.month ?? ''}
+          onChange={month => setEditForm(f => ({ ...f, month }))}
+          className="min-w-[140px]"
+        />
       </td>
       <td className="px-2 py-2">
-        <select value={editForm.product ?? ''} onChange={upd('product')} className={sel}>
-          {PRODUCTS.map(p => <option key={p}>{p}</option>)}
-        </select>
+        <SearchableSelect
+          options={PRODUCTS}
+          value={editForm.product ?? ''}
+          onChange={product => setEditForm(f => ({ ...f, product }))}
+          className="min-w-[110px]"
+        />
       </td>
       <td className="px-2 py-2">
         <input
           type="number"
           step="any"
-          value={String(editForm.qty ?? '')}
-          onChange={e => setEditForm(f => ({ ...f, qty: parseFloat(e.target.value) }))}
+          min="0.01"
+          value={String(editForm.display_qty ?? '')}
+          onChange={e => setEditForm(f => ({ ...f, display_qty: parseFloat(e.target.value) }))}
           className={inp}
         />
       </td>
@@ -99,7 +94,7 @@ function EditRow({
           <select
             value={editForm.price_type ?? 'Settle Price'}
             onChange={e => setEditForm(f => ({ ...f, price_type: e.target.value as 'Settle Price' | 'Type in', price: e.target.value === 'Settle Price' ? null : f.price }))}
-            className={sel}
+            className={inp}
           >
             <option>Settle Price</option>
             <option>Type in</option>
@@ -122,16 +117,6 @@ function EditRow({
       <td className="px-2 py-2">
         <input type="text" value={editForm.note ?? ''} onChange={upd('note' as keyof Trade)} className={inp} />
       </td>
-      <td className="px-2 py-2">
-        <select
-          value={editForm.status ?? 'Pending'}
-          onChange={e => setEditForm(f => ({ ...f, status: e.target.value as 'Pending' | 'Synced' }))}
-          className={sel}
-        >
-          <option>Pending</option>
-          <option>Synced</option>
-        </select>
-      </td>
       <td className="px-2 py-2 pr-4">
         <div className="flex items-center gap-1">
           <button onClick={onSave} className="p-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors" title="Save">
@@ -149,7 +134,7 @@ function EditRow({
 /* ── Main component ──────────────────────────────────── */
 const COL_HEADERS = [
   'Date', 'Entity', 'Account', 'Strategy', 'Trader',
-  'Dir', 'Month', 'Product', 'QTY', 'Price', 'Price ($)', 'Note', 'Status', '',
+  'Dir', 'Month', 'Product', 'QTY', 'Price', 'Price ($)', 'Note', '',
 ];
 
 export default function TodaysTrades() {
@@ -157,7 +142,7 @@ export default function TodaysTrades() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Trade>>({});
+  const [editForm, setEditForm] = useState<Partial<Trade> & { display_qty?: number }>({});
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
 
   const fetchTrades = useCallback(async () => {
@@ -178,7 +163,7 @@ export default function TodaysTrades() {
 
   function startEdit(trade: Trade) {
     setEditId(trade.id);
-    setEditForm({ ...trade });
+    setEditForm({ ...trade, display_qty: Math.abs(Number(trade.qty)) });
     setDeleteTarget(null);
   }
 
@@ -189,21 +174,30 @@ export default function TodaysTrades() {
 
   async function saveEdit(id: number) {
     const original = trades.find(t => t.id === id);
-    // Optimistic update
-    setTrades(prev => prev.map(t => t.id === id ? { ...t, ...editForm } as Trade : t));
+    const absQty = Math.abs(editForm.display_qty ?? 0);
+    if (absQty <= 0) {
+      setError('Quantity must be greater than zero.');
+      return;
+    }
+    // Apply sign based on direction for TAS trades
+    const isTAS = editForm.trade_type === 'TAS';
+    const signedQty = isTAS && editForm.direction === 'Sell' ? -absQty : absQty;
+    const payload = { ...editForm, qty: signedQty };
+    delete (payload as Record<string, unknown>).display_qty;
+
+    setTrades(prev => prev.map(t => t.id === id ? { ...t, ...payload } as Trade : t));
     setEditId(null);
 
     try {
       const res = await fetch(`/api/trades/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Save failed');
       const updated: Trade = await res.json();
       setTrades(prev => prev.map(t => t.id === id ? updated : t));
     } catch {
-      // Rollback
       if (original) setTrades(prev => prev.map(t => t.id === id ? original : t));
       setError('Failed to save — changes rolled back.');
     }
@@ -318,7 +312,6 @@ export default function TodaysTrades() {
                         : '—'}
                     </td>
                     <td className="px-3 py-2.5 text-gray-400 max-w-[130px] truncate">{trade.note || '—'}</td>
-                    <td className="px-3 py-2.5"><StatusBadge status={trade.status} /></td>
                     <td className="px-3 py-2.5 pr-4">
                       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button

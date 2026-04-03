@@ -15,6 +15,7 @@ export async function PUT(
       trade_date, trade_type, entity, account, strategy, trader,
       direction, month, product, qty, note,
       strategy_2, account_2, gives_takes, price_type, price, status,
+      pfj_associated_id,
     } = body;
 
     const result = await sql`
@@ -36,7 +37,8 @@ export async function PUT(
         gives_takes = ${gives_takes ?? null},
         price_type  = ${price_type ?? null},
         price       = ${price ?? null},
-        status      = ${status},
+        status      = ${status ?? 'Pending'},
+        pfj_associated_id = ${pfj_associated_id ?? null},
         updated_at  = NOW()
       WHERE id = ${id}
       RETURNING *

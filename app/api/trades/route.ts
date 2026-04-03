@@ -84,23 +84,31 @@ export async function POST(request: NextRequest) {
       trade_date, trade_type, entity, account, strategy, trader,
       direction, month, product, qty, note,
       strategy_2, account_2, gives_takes, price_type, price,
+      pfj_associated_id,
     } = body;
 
     if (!trade_date || !trade_type || !account || !strategy || !month || !product || qty == null) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const absQty = Math.abs(Number(qty));
+    if (absQty <= 0 || isNaN(absQty)) {
+      return NextResponse.json({ error: 'Quantity must be greater than zero' }, { status: 400 });
+    }
+
     const result = await sql`
       INSERT INTO trades (
         trade_date, trade_type, entity, account, strategy, trader,
         direction, month, product, qty, note,
-        strategy_2, account_2, gives_takes, price_type, price
+        strategy_2, account_2, gives_takes, price_type, price,
+        pfj_associated_id
       )
       VALUES (
         ${trade_date}, ${trade_type}, ${entity ?? null}, ${account}, ${strategy},
         ${trader ?? null}, ${direction ?? null}, ${month}, ${product}, ${qty},
         ${note || null}, ${strategy_2 ?? null}, ${account_2 ?? null}, ${gives_takes ?? null},
-        ${price_type ?? null}, ${price ?? null}
+        ${price_type ?? null}, ${price ?? null},
+        ${pfj_associated_id ?? null}
       )
       RETURNING *
     `;

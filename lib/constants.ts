@@ -9,6 +9,11 @@ export const STRATEGIES = [
   'Strategy 8',
   'Strategy 9',
   'Strategy 10',
+  'Strategy West 1',
+  'Strategy West 2',
+  'Strategy West 3',
+  'Strategy West 4',
+  'Strategy West 5',
 ];
 
 export const TRADERS = [
@@ -42,6 +47,11 @@ export const STRATEGY_CONFIG: Record<string, StrategyConfig> = {
   'Strategy 8':  { account: 'PFJ-008', entity: 'PTC' },
   'Strategy 9':  { account: 'PFJ-009', entity: 'PTC' },
   'Strategy 10': { account: 'PFJ-010', entity: 'PTC' },
+  'Strategy West 1': { account: 'GAM-001', entity: 'GAM' },
+  'Strategy West 2': { account: 'GAM-002', entity: 'GAM' },
+  'Strategy West 3': { account: 'GAM-003', entity: 'GAM' },
+  'Strategy West 4': { account: 'GAM-004', entity: 'GAM' },
+  'Strategy West 5': { account: 'GAM-005', entity: 'GAM' },
 };
 
 const CME_CODES: Record<number, string> = {

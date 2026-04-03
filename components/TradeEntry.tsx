@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Send, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Send, AlertCircle, CheckCircle2, RefreshCw, Clock } from 'lucide-react';
 import type { Trade } from '@/lib/types';
+import SearchableSelect from './SearchableSelect';
 import {
   STRATEGIES, TRADERS, STRATEGY_CONFIG, PRODUCTS, CONTRACT_MONTHS,
   getCurrentContractMonth,
@@ -27,6 +28,7 @@ function buildTASForm() {
     product:   PRODUCTS[0],
     qty:       '',
     note:      '',
+    pfj_associated_id: '',
   };
 }
 
@@ -35,19 +37,18 @@ function buildInternalForm() {
   const { account } = STRATEGY_CONFIG[defaultStrategy];
   const { account: account2 } = STRATEGY_CONFIG[STRATEGIES[1]];
   return {
-    trade_type:  'Internal' as const,
-    trade_date:  getToday(),
-    strategy:    defaultStrategy,
-    account,
-    gives_takes: 'Gives' as 'Gives' | 'Takes',
-    strategy_2:  STRATEGIES[1],
-    account_2:   account2,
-    month:       getCurrentContractMonth(),
-    product:     PRODUCTS[0],
-    qty:         '',
-    price_type:  'Settle Price' as 'Settle Price' | 'Type in',
-    price:       '',
-    note:        '',
+    trade_type:       'Internal' as const,
+    trade_date:       getToday(),
+    buying_strategy:  defaultStrategy,
+    buying_account:   account,
+    selling_strategy: STRATEGIES[1],
+    selling_account:  account2,
+    month:            getCurrentContractMonth(),
+    product:          PRODUCTS[0],
+    qty:              '',
+    price_type:       'Settle Price' as 'Settle Price' | 'Type in',
+    price:            '',
+    note:             '',
   };
 }
 
@@ -56,6 +57,55 @@ interface SummaryRow {
   product: string;
   month: string;
   net_qty: number;
+}
+
+/* ── CST Clock + Countdown ────────────────────────────── */
+function CSTClock() {
+  const [now, setNow] = useState(new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const cstStr = now.toLocaleTimeString('en-US', {
+    timeZone: 'America/Chicago',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+
+  // Calculate seconds until 12:45 PM CST today
+  const cstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+  const target = new Date(cstNow);
+  target.setHours(12, 45, 0, 0);
+  const diffSec = Math.floor((target.getTime() - cstNow.getTime()) / 1000);
+
+  let countdown: string;
+  let urgent = false;
+  if (diffSec <= 0) {
+    countdown = 'CLOSED';
+  } else {
+    const h = Math.floor(diffSec / 3600);
+    const m = Math.floor((diffSec % 3600) / 60);
+    const s = diffSec % 60;
+    countdown = h > 0
+      ? `${h}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`
+      : `${m}m ${String(s).padStart(2, '0')}s`;
+    if (diffSec < 300) urgent = true;
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-[11px] font-mono text-gray-400">
+      <Clock size={12} className="shrink-0" />
+      <span>{cstStr} CST</span>
+      <span className="text-gray-300">|</span>
+      <span className={urgent ? 'text-red-500 font-bold animate-pulse' : diffSec <= 0 ? 'text-gray-400' : 'text-gray-500'}>
+        {diffSec > 0 ? '12:45 in ' : ''}{countdown}
+      </span>
+    </div>
+  );
 }
 
 const labelCls = 'block text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5';
@@ -84,10 +134,17 @@ export default function TradeEntry() {
         const key = `${t.entity}||${t.product}||${t.month}`;
         map.set(key, (map.get(key) ?? 0) + Number(t.qty));
       }
-      setSummary(Array.from(map.entries()).map(([key, net_qty]) => {
+      const rows = Array.from(map.entries()).map(([key, net_qty]) => {
         const [entity, product, month] = key.split('||');
         return { entity, product, month, net_qty };
-      }));
+      });
+      // Sort by entity → product → month
+      rows.sort((a, b) =>
+        a.entity.localeCompare(b.entity) ||
+        a.product.localeCompare(b.product) ||
+        a.month.localeCompare(b.month)
+      );
+      setSummary(rows);
     } catch {
       // silent
     } finally {
@@ -101,10 +158,6 @@ export default function TradeEntry() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
       setTasForm(f => ({ ...f, [key]: e.target.value }));
 
-  const setInt = (key: keyof ReturnType<typeof buildInternalForm>) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-      setInternalForm(f => ({ ...f, [key]: e.target.value }));
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -114,19 +167,37 @@ export default function TradeEntry() {
     try {
       let body: Record<string, unknown>;
       if (tradeType === 'TAS') {
+        const rawQty = parseFloat(tasForm.qty);
+        if (!rawQty || rawQty <= 0) {
+          throw new Error('Quantity must be greater than zero.');
+        }
         body = {
           ...tasForm,
           qty: tasForm.direction === 'Sell'
-            ? -Math.abs(parseFloat(tasForm.qty))
-            : Math.abs(parseFloat(tasForm.qty)),
+            ? -Math.abs(rawQty)
+            : Math.abs(rawQty),
         };
       } else {
+        const rawQty = parseFloat(internalForm.qty);
+        if (!rawQty || rawQty <= 0) {
+          throw new Error('Quantity must be greater than zero.');
+        }
         body = {
-          ...internalForm,
-          qty: Math.abs(parseFloat(internalForm.qty)),
+          trade_type: 'Internal',
+          trade_date: internalForm.trade_date,
+          strategy: internalForm.buying_strategy,
+          account: internalForm.buying_account,
+          strategy_2: internalForm.selling_strategy,
+          account_2: internalForm.selling_account,
+          month: internalForm.month,
+          product: internalForm.product,
+          qty: Math.abs(rawQty),
+          price_type: internalForm.price_type,
           price: internalForm.price_type === 'Type in' && internalForm.price
             ? parseFloat(internalForm.price)
             : null,
+          note: internalForm.note,
+          gives_takes: null,
         };
       }
 
@@ -156,10 +227,22 @@ export default function TradeEntry() {
     }
   }
 
+  // Group summary rows by entity for visual separation
+  const entityGroups: { entity: string; rows: SummaryRow[] }[] = [];
+  let lastEntity = '';
+  for (const row of summary) {
+    if (row.entity !== lastEntity) {
+      entityGroups.push({ entity: row.entity, rows: [row] });
+      lastEntity = row.entity;
+    } else {
+      entityGroups[entityGroups.length - 1].rows.push(row);
+    }
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-5">
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        {/* Header + type toggle */}
+        {/* Header + type toggle + clock */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
             <h2 className="text-base font-semibold text-gray-900">New Trade Entry</h2>
@@ -167,21 +250,24 @@ export default function TradeEntry() {
               {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm font-medium">
-            {(['TAS', 'Internal'] as const).map(t => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => { setTradeType(t); setError(null); setSuccess(false); }}
-                className={`px-5 py-2 transition-colors ${
-                  tradeType === t
-                    ? 'bg-[#E11932] text-white'
-                    : 'bg-white text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+          <div className="flex items-center gap-4">
+            <CSTClock />
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm font-medium">
+              {(['TAS', 'Internal'] as const).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => { setTradeType(t); setError(null); setSuccess(false); }}
+                  className={`px-5 py-2 transition-colors ${
+                    tradeType === t
+                      ? 'bg-[#E11932] text-white'
+                      : 'bg-white text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -204,25 +290,25 @@ export default function TradeEntry() {
 
               <div>
                 <label className={labelCls}>Strategy</label>
-                <select
+                <SearchableSelect
+                  options={STRATEGIES}
                   value={tasForm.strategy}
-                  onChange={e => {
-                    const strategy = e.target.value;
+                  onChange={strategy => {
                     const { entity, account } = STRATEGY_CONFIG[strategy];
                     setTasForm(f => ({ ...f, strategy, entity, account }));
                   }}
-                  className={selectCls}
                   required
-                >
-                  {STRATEGIES.map(s => <option key={s}>{s}</option>)}
-                </select>
+                />
               </div>
 
               <div>
                 <label className={labelCls}>Trader</label>
-                <select value={tasForm.trader} onChange={setTas('trader')} className={selectCls} required>
-                  {TRADERS.map(t => <option key={t}>{t}</option>)}
-                </select>
+                <SearchableSelect
+                  options={TRADERS}
+                  value={tasForm.trader}
+                  onChange={trader => setTasForm(f => ({ ...f, trader }))}
+                  required
+                />
               </div>
 
               <div>
@@ -240,16 +326,22 @@ export default function TradeEntry() {
 
               <div>
                 <label className={labelCls}>Contract Month</label>
-                <select value={tasForm.month} onChange={setTas('month')} className={selectCls} required>
-                  {CONTRACT_MONTHS.map(m => <option key={m}>{m}</option>)}
-                </select>
+                <SearchableSelect
+                  options={CONTRACT_MONTHS}
+                  value={tasForm.month}
+                  onChange={month => setTasForm(f => ({ ...f, month }))}
+                  required
+                />
               </div>
 
               <div>
                 <label className={labelCls}>Product</label>
-                <select value={tasForm.product} onChange={setTas('product')} className={selectCls} required>
-                  {PRODUCTS.map(p => <option key={p}>{p}</option>)}
-                </select>
+                <SearchableSelect
+                  options={PRODUCTS}
+                  value={tasForm.product}
+                  onChange={product => setTasForm(f => ({ ...f, product }))}
+                  required
+                />
               </div>
 
               <div>
@@ -257,7 +349,7 @@ export default function TradeEntry() {
                 <input
                   type="number"
                   step="any"
-                  min="0"
+                  min="0.01"
                   value={tasForm.qty}
                   onChange={setTas('qty')}
                   placeholder="0"
@@ -266,7 +358,12 @@ export default function TradeEntry() {
                 />
               </div>
 
-              <div className="col-span-3">
+              <div>
+                <label className={labelCls}>PFJ Associated ID <span className="normal-case font-normal">(optional)</span></label>
+                <input type="text" value={tasForm.pfj_associated_id} onChange={setTas('pfj_associated_id')} placeholder="e.g. PFJ-12345" className={inputCls} />
+              </div>
+
+              <div className="col-span-2">
                 <label className={labelCls}>Note <span className="normal-case font-normal">(optional)</span></label>
                 <input type="text" value={tasForm.note} onChange={setTas('note')} placeholder="Add a note…" className={inputCls} />
               </div>
@@ -276,67 +373,54 @@ export default function TradeEntry() {
             <div className="grid grid-cols-3 gap-x-4 gap-y-4">
               <div>
                 <label className={labelCls}>Trade Date</label>
-                <input type="date" value={internalForm.trade_date} onChange={setInt('trade_date')} className={inputCls} required />
+                <input type="date" value={internalForm.trade_date} onChange={e => setInternalForm(f => ({ ...f, trade_date: e.target.value }))} className={inputCls} required />
               </div>
               <div>
                 <label className={labelCls}>Contract Month</label>
-                <select value={internalForm.month} onChange={setInt('month')} className={selectCls} required>
-                  {CONTRACT_MONTHS.map(m => <option key={m}>{m}</option>)}
-                </select>
+                <SearchableSelect
+                  options={CONTRACT_MONTHS}
+                  value={internalForm.month}
+                  onChange={month => setInternalForm(f => ({ ...f, month }))}
+                  required
+                />
               </div>
               <div>
                 <label className={labelCls}>Product</label>
-                <select value={internalForm.product} onChange={setInt('product')} className={selectCls} required>
-                  {PRODUCTS.map(p => <option key={p}>{p}</option>)}
-                </select>
+                <SearchableSelect
+                  options={PRODUCTS}
+                  value={internalForm.product}
+                  onChange={product => setInternalForm(f => ({ ...f, product }))}
+                  required
+                />
               </div>
 
-              {/* Strategy 1 | Gives/Takes | Strategy 2 — reads across */}
+              {/* Buying Strategy | Selling Strategy */}
               <div>
-                <label className={labelCls}>Strategy</label>
-                <select
-                  value={internalForm.strategy}
-                  onChange={e => {
-                    const strategy = e.target.value;
+                <label className={labelCls}>Buying Strategy</label>
+                <SearchableSelect
+                  options={STRATEGIES}
+                  value={internalForm.buying_strategy}
+                  onChange={strategy => {
                     const { account } = STRATEGY_CONFIG[strategy];
-                    setInternalForm(f => ({ ...f, strategy, account }));
+                    setInternalForm(f => ({ ...f, buying_strategy: strategy, buying_account: account }));
                   }}
-                  className={selectCls}
                   required
-                >
-                  {STRATEGIES.map(s => <option key={s}>{s}</option>)}
-                </select>
-                <p className="mt-1 text-[11px] text-gray-400">{internalForm.account}</p>
+                />
+                <p className="mt-1 text-[11px] text-gray-400">{internalForm.buying_account}</p>
               </div>
 
               <div>
-                <label className={labelCls}>Gives / Takes</label>
-                <select
-                  value={internalForm.gives_takes}
-                  onChange={e => setInternalForm(f => ({ ...f, gives_takes: e.target.value as 'Gives' | 'Takes' }))}
-                  className={selectCls}
-                  required
-                >
-                  <option>Gives</option>
-                  <option>Takes</option>
-                </select>
-              </div>
-
-              <div>
-                <label className={labelCls}>Strategy</label>
-                <select
-                  value={internalForm.strategy_2}
-                  onChange={e => {
-                    const strategy_2 = e.target.value;
-                    const { account: account_2 } = STRATEGY_CONFIG[strategy_2];
-                    setInternalForm(f => ({ ...f, strategy_2, account_2 }));
+                <label className={labelCls}>Selling Strategy</label>
+                <SearchableSelect
+                  options={STRATEGIES}
+                  value={internalForm.selling_strategy}
+                  onChange={strategy => {
+                    const { account } = STRATEGY_CONFIG[strategy];
+                    setInternalForm(f => ({ ...f, selling_strategy: strategy, selling_account: account }));
                   }}
-                  className={selectCls}
                   required
-                >
-                  {STRATEGIES.map(s => <option key={s}>{s}</option>)}
-                </select>
-                <p className="mt-1 text-[11px] text-gray-400">{internalForm.account_2}</p>
+                />
+                <p className="mt-1 text-[11px] text-gray-400">{internalForm.selling_account}</p>
               </div>
 
               <div>
@@ -344,9 +428,9 @@ export default function TradeEntry() {
                 <input
                   type="number"
                   step="any"
-                  min="0"
+                  min="0.01"
                   value={internalForm.qty}
-                  onChange={setInt('qty')}
+                  onChange={e => setInternalForm(f => ({ ...f, qty: e.target.value }))}
                   placeholder="0"
                   required
                   className={inputCls}
@@ -375,7 +459,7 @@ export default function TradeEntry() {
                     min="0"
                     max="10"
                     value={internalForm.price}
-                    onChange={setInt('price')}
+                    onChange={e => setInternalForm(f => ({ ...f, price: e.target.value }))}
                     placeholder="0.00"
                     required
                     className={inputCls}
@@ -385,7 +469,7 @@ export default function TradeEntry() {
 
               <div className={internalForm.price_type === 'Type in' ? 'col-span-3' : 'col-span-2'}>
                 <label className={labelCls}>Note <span className="normal-case font-normal">(optional)</span></label>
-                <input type="text" value={internalForm.note} onChange={setInt('note')} placeholder="Add a note…" className={inputCls} />
+                <input type="text" value={internalForm.note} onChange={e => setInternalForm(f => ({ ...f, note: e.target.value }))} placeholder="Add a note…" className={inputCls} />
               </div>
             </div>
           )}
@@ -450,7 +534,7 @@ export default function TradeEntry() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
+                <tr className="bg-gray-50 border-b border-gray-200">
                   {['Entity', 'Product', 'Month', 'Net QTY'].map(h => (
                     <th key={h} className={`px-5 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 first:pl-6 last:pr-6 ${h === 'Net QTY' ? 'text-right' : 'text-left'}`}>
                       {h}
@@ -458,18 +542,29 @@ export default function TradeEntry() {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {summary.map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="px-5 py-2.5 pl-6 text-gray-700">{row.entity}</td>
-                    <td className="px-5 py-2.5 text-gray-700 font-medium">{row.product}</td>
-                    <td className="px-5 py-2.5 text-gray-500">{row.month}</td>
-                    <td className={`px-5 py-2.5 pr-6 text-right font-mono font-semibold ${
-                      row.net_qty > 0 ? 'text-green-600' : row.net_qty < 0 ? 'text-[#E11932]' : 'text-gray-500'
-                    }`}>
-                      {row.net_qty > 0 ? '+' : ''}{row.net_qty.toLocaleString()}
-                    </td>
-                  </tr>
+              <tbody>
+                {entityGroups.map((group, gi) => (
+                  group.rows.map((row, ri) => (
+                    <tr
+                      key={`${group.entity}-${ri}`}
+                      className={`
+                        ${ri % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'}
+                        ${gi > 0 && ri === 0 ? 'border-t-2 border-gray-300' : ri > 0 ? 'border-t border-gray-100' : 'border-t border-gray-100'}
+                        hover:bg-gray-50/60 transition-colors
+                      `}
+                    >
+                      <td className="px-5 py-2.5 pl-6 text-gray-700 font-medium">
+                        {ri === 0 ? row.entity : ''}
+                      </td>
+                      <td className="px-5 py-2.5 text-gray-700 font-medium">{row.product}</td>
+                      <td className="px-5 py-2.5 text-gray-500">{row.month}</td>
+                      <td className={`px-5 py-2.5 pr-6 text-right font-mono font-semibold ${
+                        row.net_qty > 0 ? 'text-green-600' : row.net_qty < 0 ? 'text-[#E11932]' : 'text-gray-500'
+                      }`}>
+                        {row.net_qty > 0 ? '+' : ''}{row.net_qty.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))
                 ))}
               </tbody>
             </table>

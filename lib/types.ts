@@ -17,6 +17,7 @@ export interface Trade {
   price_type: 'Settle Price' | 'Type in' | null;
   price: number | null;
   status: 'Pending' | 'Synced';
+  pfj_associated_id: string | null;
   created_at: string;
   updated_at: string;
 }
