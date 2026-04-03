@@ -113,8 +113,7 @@ function EditRow({ editForm, setEditForm, onSave, onCancel }: {
 
 const COL_HEADERS = ['Date', 'Entity', 'Account', 'Strategy', 'Trader', 'Dir', 'Month', 'Product', 'QTY', 'PFJ ID', 'Note', ''];
 
-export default function TASTradesTab() {
-  const [date, setDate] = useState(getToday());
+export default function TASTradesTab({ date, onDateChange }: { date: string; onDateChange: (d: string) => void }) {
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -213,12 +212,12 @@ export default function TASTradesTab() {
         <div className="flex items-end gap-3">
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Date</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} />
+            <input type="date" value={date} onChange={e => onDateChange(e.target.value)} className={inputCls} />
           </div>
           <button onClick={fetchTrades} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-[#E11932] hover:bg-[#C41529] text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 shadow-sm">
             <Filter size={14} />{loading ? 'Loading…' : 'Apply'}
           </button>
-          <button onClick={() => setDate(getToday())} className="text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={() => onDateChange(getToday())} className="text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
             Today
           </button>
           <button

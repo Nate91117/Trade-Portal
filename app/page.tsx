@@ -10,8 +10,11 @@ import NetPosition from '@/components/NetPosition';
 
 export type Tab = 'entry' | 'tas' | 'internal' | 'net';
 
+function getToday() { return new Date().toISOString().split('T')[0]; }
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('entry');
+  const [filterDate, setFilterDate] = useState(getToday);
 
   return (
     <div className="flex h-screen bg-[#F8F9FA] overflow-hidden">
@@ -20,9 +23,9 @@ export default function Home() {
         <Header />
         <main className="flex-1 overflow-y-auto p-6">
           {activeTab === 'entry'    && <TradeEntry />}
-          {activeTab === 'tas'      && <TASTradesTab />}
-          {activeTab === 'internal' && <InternalTradesTab />}
-          {activeTab === 'net'      && <NetPosition />}
+          {activeTab === 'tas'      && <TASTradesTab date={filterDate} onDateChange={setFilterDate} />}
+          {activeTab === 'internal' && <InternalTradesTab date={filterDate} onDateChange={setFilterDate} />}
+          {activeTab === 'net'      && <NetPosition date={filterDate} onDateChange={setFilterDate} />}
         </main>
       </div>
     </div>

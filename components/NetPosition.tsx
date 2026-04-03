@@ -13,8 +13,7 @@ interface NetRow {
   net_qty: number;
 }
 
-export default function NetPosition() {
-  const [date, setDate] = useState(getToday());
+export default function NetPosition({ date, onDateChange }: { date: string; onDateChange: (d: string) => void }) {
   const [rows, setRows] = useState<NetRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -54,13 +53,13 @@ export default function NetPosition() {
         <div className="flex items-end gap-3">
           <div>
             <label className="block text-[11px] font-semibold uppercase tracking-widest text-gray-400 mb-1.5">Date</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} />
+            <input type="date" value={date} onChange={e => onDateChange(e.target.value)} className={inputCls} />
           </div>
           <button onClick={fetchNet} disabled={loading} className="flex items-center gap-2 px-4 py-2 bg-[#E11932] hover:bg-[#C41529] text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 shadow-sm">
             <Filter size={14} />
             {loading ? 'Loading…' : 'Apply'}
           </button>
-          <button onClick={() => { setDate(getToday()); }} className="text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={() => { onDateChange(getToday()); }} className="text-sm text-gray-500 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
             Today
           </button>
           {hasSearched && (
