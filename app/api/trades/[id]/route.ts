@@ -3,11 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const sql = getDb();
-    const id = parseInt(params.id, 10);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
     if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
     const body = await request.json();
@@ -57,11 +58,12 @@ export async function PUT(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const sql = getDb();
-    const id = parseInt(params.id, 10);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr, 10);
     if (isNaN(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
 
     const result = await sql`DELETE FROM trades WHERE id = ${id} RETURNING id`;

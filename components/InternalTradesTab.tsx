@@ -220,12 +220,15 @@ export default function InternalTradesTab({ date, onDateChange }: { date: string
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error('Save failed');
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Save failed (${res.status})`);
+      }
       const updated: Trade = await res.json();
       setTrades(prev => prev.map(t => t.id === id ? updated : t));
-    } catch {
+    } catch (err) {
       if (original) setTrades(prev => prev.map(t => t.id === id ? original : t));
-      setError('Failed to save — changes rolled back.');
+      setError(`Failed to save — ${err instanceof Error ? err.message : 'unknown error'}`);
     }
   }
 
